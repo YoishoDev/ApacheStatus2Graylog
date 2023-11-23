@@ -1,9 +1,13 @@
 #!/bin/bash
 
+# see https://go2docs.graylog.org/5-0/getting_in_log_data/gelf.html
+version="1.1"
+short_message="Apache http server status message"
+level=6
 host=` hostname`
 hostIpAddress=`hostname -I | cut -d' ' -f1`
-grayLogServer=graylog.domain.org
-grayLogServerPort=122201
+grayLogServer=siemserver.vkta.de
+grayLogServerPort=12201
 sourceModuleName="apache_application_status"
 apacheStatusFile="/etc/apache2/monitoring/apache_httpd_status.tmp"
 apacheStatuslogFile="/etc/apache2/monitoring/apache_httpd_status.json"
@@ -14,7 +18,7 @@ freeWorkers=0
 
 loop=0
 
-jsonString="{"
+jsonString="{ \"version\": \"$version\","
 
 curl -k https://$hostIpAddress/server-status?auto -o "$apacheStatusFile"
 
@@ -39,8 +43,8 @@ then
 	jsonString="$jsonString \"ApacheFreeWorkers\" : \"$freeWorkers\","
 fi
 
-jsonString="$jsonString \"short_message\" : \"Apache http server status message\","
-jsonString="$jsonString \"level\" : \"6\","
+jsonString="$jsonString \"short_message\" : \"$short_message\","
+jsonString="$jsonString \"level\" : $level,"
 jsonString="$jsonString \"host\" : \"$host\","
 jsonString="$jsonString \"SourceModuleName\" : \"$sourceModuleName\","
 jsonString="$jsonString \"timestamp\" : `date '+%s'`"
