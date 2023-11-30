@@ -3,7 +3,7 @@
 # Can use in NX-Log
 $logFilePath = "D:\Logs\Monitoring\monitoring_status.json"
 $shortMessage="Windos system monitoring values"
-$fullMessage="Windos system monitoring values, cpu load in percent, disk usage and memory in GB"
+$fullMessage="Windos system monitoring values, cpu load in percent, disk usage and memory in GB, failed (automatic started) services"
 
 $jsonString = '{ '
 
@@ -32,11 +32,26 @@ $jsonString = $jsonString + '"' + 'SysMonUsedSwap' + '" : ' + $swapUsed + ', '
 $loop = 0 
 $diskInfos = Get-WMIObject Win32_LogicalDisk | Select Name, Size, FreeSpace
 ForEach ($diskInfo in $diskInfos) {
-	$count  = $count - 1
 	$used =  [Math]::Round((($diskInfo.Size - $diskInfo.FreeSpace) * 100) / $diskInfo.Size, 2)
 	$jsonString = $jsonString + '"' + 'SysMonPartition' + $loop + 'Name' + '" : ' + '"' + $diskInfo.Name + '", ' + '"' + 'SysMonPartition' + $loop + 'Used' + '" : ' + $used +', '	
 	$loop = $loop + 1
 }
+
+# failed services
+# filter
+$fiteredServices = 'edgeupdate', 'RemoteRegistry', 'sppsvc'
+$failedServiceNames = @()
+$stoppedServices = Get-Service | Where-Object {$_.Status -eq "Stopped"} | where Starttype -match Automatic
+$failedServices = $stoppedServices.Count
+ForEach ($stoppedService in $stoppedServices) {
+	if ($fiteredServices -Contains $stoppedService.Name) {
+		$failedServices = $failedServices -1
+	} else {
+		$failedServiceNames += $stoppedService.Name
+	}
+}
+
+$jsonString = $jsonString + '"' + 'SysMonFailedServices' + '" : ' + $failedServices + ', ' + '"' + 'SysMonFailedServiceNames' + '" : ' + '"' + $failedServiceNames + '", '
 
 # finalize the json string
 $jsonString = $jsonString + '"' + 'short_message' + '" : ' + '"' + $shortMessage + '"' + ', '
