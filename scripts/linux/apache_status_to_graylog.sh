@@ -3,14 +3,14 @@
 # see https://go2docs.graylog.org/5-0/getting_in_log_data/gelf.html
 version="1.1"
 short_message="Apache http server status message"
+full_message="Apache http server status message"
 level=6
 host=` hostname`
 hostIpAddress=`hostname -I | cut -d' ' -f1`
-grayLogServer=graylogserver.org
+grayLogServer=siemserver.vkta.de
 grayLogServerPort=12201
-sourceModuleName="apache_application_status"
-apacheStatusFile="/etc/apache2/monitoring/apache_httpd_status.tmp"
-apacheStatuslogFile="/etc/apache2/monitoring/apache_httpd_status.json"
+sourceModuleName="apache_httpd_status"
+apacheStatusFile="/tmp/apache_httpd_status.tmp"
 
 idleWorkers=0
 busyWorkers=0
@@ -44,6 +44,7 @@ then
 fi
 
 jsonString="$jsonString \"short_message\" : \"$short_message\","
+jsonString="$jsonString \"full_message\" : \"$full_message\","
 jsonString="$jsonString \"level\" : $level,"
 jsonString="$jsonString \"host\" : \"$host\","
 jsonString="$jsonString \"SourceModuleName\" : \"$sourceModuleName\","
