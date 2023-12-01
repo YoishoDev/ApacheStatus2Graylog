@@ -1,19 +1,25 @@
 #!/bin/bash
 
+# Script for determining selected monitoring parameters and integration into Graylog
+# Tested on Debian 12
+# (C) Michael Schmidt
+# Version 0.1 (01.12.2023)
+
+# build a valid gelf message
 # see https://go2docs.graylog.org/5-0/getting_in_log_data/gelf.html
 version="1.1"
-short_message="System monitoring values"
-full_message="System monitoring values, cpu load and I/O wait time in percent, disk usage and memory in GB"
+short_message="Linux system monitoring values"
+full_message="Linux System monitoring values, cpu load and I/O wait time in percent, disk usage and memory in GB, failed (automatic) services"
 level=6
 host=` hostname`
 hostIpAddress=`hostname -I | cut -d' ' -f1`
 grayLogServer=siemserver.domain.com
 grayLogServerPort=12201
-sourceModuleName="system_monitoring_status"
+sourceModuleName="linux_monitoring_status"
 tempStatusFile="/tmp/monitoring_status.tmp"
 
 # monitored partitions partitions=(/ /data ...)
-partitions=(/)
+partitions=(/ /data)
 
 # apt-get install sysstat
 # apt install bc
@@ -71,7 +77,10 @@ done
 failedServices=`$systemctl --type=service --state=failed | grep "loaded units listed" | cut -d " " -f1`
 if [[ $failedServices =~ ^[0-9]+$ ]]
 then
-        jsonString="$jsonString \"SysMonFailedServices\" : $failedServices, "
+	failedServiceNames=` systemctl --type=service --state=failed | grep "failed" | cut -d " " -f2`
+        jsonString="$jsonString \"SysMonFailedServices\" : $failedServices, \"SysMonFailedServiceNames\" : \"$failedServiceNames\", "
+else
+	jsonString="$jsonString \"SysMonFailedServices\" : -1, \"SysMonFailedServiceNames\" : \"No results for service check!\", "
 fi
 
 jsonString="$jsonString \"full_message\" : \"$full_message\","
@@ -84,3 +93,4 @@ jsonString="$jsonString \"timestamp\" : `date '+%s'`"
 jsonString="$jsonString }"
 
 echo $jsonString | ncat -w 2 --ssl $grayLogServer $grayLogServerPort
+
