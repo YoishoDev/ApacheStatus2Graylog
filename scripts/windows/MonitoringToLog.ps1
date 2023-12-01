@@ -1,7 +1,9 @@
-#
-# Version 0.1
-# Can use in NX-Log
-$logFilePath = "D:\Logs\Monitoring\monitoring_status.json"
+# Script for determining selected monitoring parameters and integration into NX-Log and Graylog
+# Tested on Microsoft Windows 2016, 2019 and 2022
+# (C) Michael Schmidt
+# Version 0.1 (01.12.2023)
+
+$logFilePath = "C:\ProgramData\Monitoring\Logs\monitoring_status.json"
 $shortMessage="Windos system monitoring values"
 $fullMessage="Windos system monitoring values, cpu load in percent, disk usage and memory in GB, failed (automatic started) services"
 

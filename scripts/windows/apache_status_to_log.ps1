@@ -1,7 +1,14 @@
-# Can use in NX-Log
-$hostIpAddress = x.x.x.x
+# Script for determining selected monitoring parameters and integration into NX-Log and Graylog
+# Tested on Microsoft Windows 2016, 2019 and 2022 and Apache 2.4
+# (C) Michael Schmidt
+# Version 0.1 (01.12.2023)
+
+$apacheServerIpAddress = "1.1.1.1"
 $apacheStatusFile = "D:\Logs\httpd\apache_httpd_status.tmp"
-$LogFilePath = "D:\Logs\httpd\apache_httpd_status.json"
+$logFilePath = "D:\Logs\httpd\apache_httpd_status.json"
+
+$short_message="Apache http server status message"
+$full_message="Apache http server status message"
 
 $idleWorkers = 0
 $busyWorkers = 0
@@ -25,7 +32,7 @@ add-type @"
 # End Bypasses for the certificate issues.
 
 # get Apache status from url
-Invoke-WebRequest -Uri https://$hostIpAddress/server-status?auto -OutFile $apacheStatusFile
+Invoke-WebRequest -Uri https://$apacheServerIpAddress/server-status?auto -OutFile $apacheStatusFile
 
 # load content from temp status file
 $fileContent = Get-Content $apacheStatusFile
@@ -73,7 +80,8 @@ if($idleWorkers -match "^\d+$" -And $busyWorkers -match "^\d+$")
 	$jsonString = $jsonString + ', "' + "ApacheFreeWorkers" + '" : "' + $freeWorkers + '"'
 }
 
-$jsonString = $jsonString + "}"
+$jsonString = $jsonString + ', "' + "short_message" + '" : "' + $short_message + '"' + ', "' + "full_message" + '" : "' + $full_message + '"'
+$jsonString = $jsonString + " }"
 
 Write-Output $jsonString | Out-File -Encoding utf8 -Append -FilePath $logFilePath
 
