@@ -5,7 +5,7 @@
 
 $logFilePath = "C:\ProgramData\Monitoring\Logs\monitoring_status.json"
 $shortMessage="Windos system monitoring values"
-$fullMessage="Windos system monitoring values, cpu load in percent, disk usage and memory in GB, failed (automatic started) services"
+$fullMessage="Windos system monitoring values, cpu load and swap usage in percent, disk usage and memory in GB, failed (automatic started) services"
 
 $jsonString = '{ '
 
@@ -27,16 +27,30 @@ $jsonString = $jsonString + '"' + 'SysMonTotalMemory' + '" : ' + $totalMemory + 
 $freeMemory = Get-WmiObject Win32_OperatingSystem | Measure-Object -Property FreePhysicalMemory -Sum | % {[Math]::Round($_.sum/1024/1024)}
 $jsonString = $jsonString + '"' + 'SysMonFreeMemory' + '" : ' + $freeMemory + ', '
 
-$swapUsed = Get-WmiObject Win32_PageFileUsage | % {[Math]::Round($_.sum/1024/1024)}
-$jsonString = $jsonString + '"' + 'SysMonUsedSwap' + '" : ' + $swapUsed + ', '
+# swap usage in percent
+$loop = 0
+$allSwapUsed = 0
+$swapInfos = Get-WmiObject Win32_PageFileUsage | where {$_.CurrentUsage}
+ForEach ($swapInfo in $swapInfos) {
+	if ($swapInfo.CurrentUsage -match "^\d+$") { 
+		$swapUsed = [Math]::Round($swapInfo.CurrentUsage, 2)
+		$name = $swapInfo.Name.substring(0,2)
+		$jsonString = $jsonString + '"' + 'SysMonUsedSwap' + $loop + 'Name' + '" : ' + '"' + $name + '", ' + '"' + 'SysMonUsedSwap' + $loop + 'Used' + '" : ' + $swapUsed +', '	
+		$loop = $loop + 1
+		$allSwapUsed = $allSwapUsed + $swapUsed
+	}
+}
+$jsonString = $jsonString + '"' + 'SysMonUsedSwap' + '" : ' + $allSwapUsed  +', '	
 
 # disk informations in kb
 $loop = 0 
 $diskInfos = Get-WMIObject Win32_LogicalDisk | Select Name, Size, FreeSpace
 ForEach ($diskInfo in $diskInfos) {
-	$used =  [Math]::Round((($diskInfo.Size - $diskInfo.FreeSpace) * 100) / $diskInfo.Size, 2)
-	$jsonString = $jsonString + '"' + 'SysMonPartition' + $loop + 'Name' + '" : ' + '"' + $diskInfo.Name + '", ' + '"' + 'SysMonPartition' + $loop + 'Used' + '" : ' + $used +', '	
-	$loop = $loop + 1
+	if ($diskInfo.Size -match "^\d+$" -And $diskInfo.FreeSpace -match "^\d+$") { 
+		$used =  [Math]::Round((($diskInfo.Size - $diskInfo.FreeSpace) * 100) / $diskInfo.Size, 2)
+		$jsonString = $jsonString + '"' + 'SysMonPartition' + $loop + 'Name' + '" : ' + '"' + $diskInfo.Name + '", ' + '"' + 'SysMonPartition' + $loop + 'Used' + '" : ' + $used +', '	
+		$loop = $loop + 1
+	}
 }
 
 # failed services
