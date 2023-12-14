@@ -5,7 +5,7 @@
 
 $logFilePath = "C:\ProgramData\Monitoring\Logs\monitoring_status.json"
 $shortMessage="Windos system monitoring values"
-$fullMessage="Windos system monitoring values, cpu load and swap usage in percent, disk usage and memory in GB, failed (automatic started) services"
+$fullMessage="Windos system monitoring values, cpu load, memory and swap usage in percent, disk usage and physical memory in GB, failed (automatic started) services"
 
 $jsonString = '{ '
 
@@ -20,12 +20,17 @@ ForEach ($osInfo in $osInfos) {
 $cpuLoad =  Get-WmiObject Win32_Processor | Measure-Object -Property LoadPercentage -Average | Select Average -ExpandProperty Average
 $jsonString = $jsonString + '"' + 'SysMonCPULoad' + '" : ' + $cpuLoad + ', '
 
-# memory values in GB
+# memory values
+# available memory in GB, used memory in percent
 $totalMemory = Get-WmiObject Win32_OperatingSystem | Measure-Object -Property TotalVisibleMemorySize -Sum | % {[Math]::Round($_.sum/1024/1024)}
 $jsonString = $jsonString + '"' + 'SysMonTotalMemory' + '" : ' + $totalMemory + ', '
-
+ 
 $freeMemory = Get-WmiObject Win32_OperatingSystem | Measure-Object -Property FreePhysicalMemory -Sum | % {[Math]::Round($_.sum/1024/1024)}
-$jsonString = $jsonString + '"' + 'SysMonFreeMemory' + '" : ' + $freeMemory + ', '
+$usedMemory = 0
+if (($totalMemory -match "^\d+$") -And ($freeMemory -match "^\d+$")) { 
+	$usedMemory = 100 - [Math]::Round(($freeMemory * 100 / $totalMemory), 0)
+}
+$jsonString = $jsonString + '"' + 'SysMonUsedMemory' + '" : ' + $usedMemory + ', '
 
 # swap usage in percent
 $loop = 0
